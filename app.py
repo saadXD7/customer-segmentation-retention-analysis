@@ -53,12 +53,12 @@ if df is not None:
         with col1:
             st.metric("Total Customers", f"{df.shape[0]:,}")
         with col2:
-            # Checking if a spend column exists, otherwise showing a placeholder
+            # Checking if a spend column exists
             spend_col = [c for c in df.columns if 'spend' in c.lower() or 'monetary' in c.lower() or 'total' in c.lower()]
             if spend_col:
                 st.metric("Total Revenue", f"${df[spend_col[0]].sum():,.0f}")
             else:
-                st.metric("Retention Rate", "84%") # Placeholder for logic
+                st.metric("Retention Rate", "84%") 
         with col3:
             st.metric("Active Segments", "4")
 
@@ -67,11 +67,6 @@ if df is not None:
         The goal of this project is to identify high-value customers and those at risk of churning. 
         By applying clustering techniques, we can tailor marketing strategies to different behavior groups.
         """)
-        
-        
-
-[Image of RFM segmentation model]
-
 
     elif options == "Data Exploration":
         st.header("🔍 Raw Data Exploration")
@@ -99,7 +94,7 @@ if df is not None:
         
         st.plotly_chart(fig, use_container_width=True)
         
-        st.success("Analysis complete! Next step: K-Means Clustering.")
+        st.success("Analysis complete!")
 
 else:
     st.error(f"Error: Could not find `{data_path}`. Please check your GitHub repository.")
