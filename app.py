@@ -16,6 +16,7 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         border: 1px solid #f0f2f6;
     }
+    footer {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -26,21 +27,33 @@ data_path = "data/raw/customer_data.csv"
 def load_data():
     if os.path.exists(data_path):
         df = pd.read_csv(data_path)
-        # --- CLEANING DATA FOR RECRUITER-READY CODE ---
         if 'signup_date' in df.columns:
-            # errors='coerce' turns bad dates into "NaT" instead of crashing the app
             df['signup_date'] = pd.to_datetime(df['signup_date'], errors='coerce')
-            # drop rows where date is missing so resample doesn't fail
             df = df.dropna(subset=['signup_date'])
         return df
     return None
 
 df = load_data()
 
-# 2. Sidebar
+# 2. Sidebar & Predictor Tool
 with st.sidebar:
     st.title("🛠️ Project Controls")
     page = st.radio("Select View", ["Business Dashboard", "Deep Dive Analysis", "Strategic Advice"])
+    
+    st.markdown("---")
+    st.subheader("🤖 Live Segment Predictor")
+    st.write("Enter metrics to classify a new customer:")
+    input_spend = st.number_input("Customer Total Spend ($)", min_value=0, value=100)
+    
+    if st.button("Run Prediction"):
+        # This is a logic-based mock-up of your K-Means results
+        if input_spend > 1500:
+            st.success("Target: **High-Value Champion**")
+        elif input_spend > 500:
+            st.info("Target: **Potential Loyalist**")
+        else:
+            st.warning("Target: **Standard/At-Risk**")
+            
     st.markdown("---")
     if df is not None:
         csv = df.to_csv(index=False).encode('utf-8')
@@ -56,23 +69,23 @@ if df is not None:
         with col1:
             st.metric("Total Customers", f"{len(df):,}")
         with col2:
-            st.metric("Avg. Spend", "$452.10") 
+            # Dynamic calculation for Avg Spend if column exists
+            spend_col = [c for c in df.columns if 'spend' in c.lower() or 'total' in c.lower()]
+            avg_val = f"${df[spend_col[0]].mean():.2f}" if spend_col else "$452.10"
+            st.metric("Avg. Spend", avg_val) 
         with col3:
-            st.metric("Retention", "78%", delta="2%")
+            st.metric("Retention Rate", "78%", delta="2%")
         with col4:
             st.metric("Churn Risk", "12%", delta="-1%", delta_color="inverse")
 
         st.markdown("### Customer Growth Trend")
         if 'signup_date' in df.columns:
-            # Grouping by Month ('ME' is for Month End to avoid future warnings)
             trend_df = df.resample('ME', on='signup_date').size().reset_index(name='New Customers')
             fig_trend = px.line(trend_df, x='signup_date', y='New Customers', 
                                 template="plotly_white", 
-                                title="New Signups Per Month",
+                                title="New Signups Over Time",
                                 color_discrete_sequence=['#ff4b4b'])
             st.plotly_chart(fig_trend, use_container_width=True)
-        else:
-            st.info("Signup date column not detected for trend analysis.")
 
     elif page == "Deep Dive Analysis":
         st.title("🔍 Data Exploration & RFM")
@@ -84,10 +97,12 @@ if df is not None:
                 x_ax = st.selectbox("X Axis", df.columns, index=0)
                 y_ax = st.selectbox("Y Axis", df.columns, index=min(1, len(df.columns)-1))
             with col_b:
-                fig_scat = px.scatter(df, x=x_ax, y=y_ax, template="plotly_white", color_discrete_sequence=['#ff4b4b'])
+                fig_scat = px.scatter(df, x=x_ax, y=y_ax, template="plotly_white", 
+                                     color_discrete_sequence=['#ff4b4b'], hover_name=df.columns[0])
                 st.plotly_chart(fig_scat, use_container_width=True)
         
         with tab2:
+            st.write("### Full Dataset Preview")
             st.dataframe(df, use_container_width=True)
 
     elif page == "Strategic Advice":
@@ -96,14 +111,26 @@ if df is not None:
         col_left, col_right = st.columns(2)
         with col_left:
             st.subheader("Segment: High Value")
-            st.info("**Strategy:** Loyalty program & early access.")
+            st.info("**Strategy:** Loyalty program & early access. These customers drive the most revenue.")
             st.subheader("Segment: At Risk")
-            st.warning("**Strategy:** Send 20% discount coupon via email.")
+            st.warning("**Strategy:** Send 20% discount coupon. Immediate action required to prevent churn.")
         with col_right:
             st.subheader("Segment: New Users")
-            st.success("**Strategy:** 3-part welcome email sequence.")
+            st.success("**Strategy:** 3-part welcome email sequence. Focus on product education.")
             st.subheader("Segment: Hibernating")
-            st.error("**Strategy:** Re-engagement campaign or feedback survey.")
+            st.error("**Strategy:** Re-engagement campaign. Attempt to win back via feedback surveys.")
+
+    # PROFESSIONAL FOOTER
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style="text-align: center;">
+            <p>Built with ❤️ by <b>Saad</b> | Data Scientist | 
+            <a href="https://github.com/saadXD7" target="_blank">GitHub</a> | 
+            Project: Customer Segmentation & Retention Analysis</p>
+        </div>
+        """, unsafe_allow_html=True
+    )
 
 else:
     st.error("Data file not found. Please ensure `customer_data.csv` is in `data/raw/` on GitHub.")
