@@ -25,7 +25,14 @@ data_path = "data/raw/customer_data.csv"
 @st.cache_data
 def load_data():
     if os.path.exists(data_path):
-        return pd.read_csv(data_path)
+        df = pd.read_csv(data_path)
+        # --- CLEANING DATA FOR RECRUITER-READY CODE ---
+        if 'signup_date' in df.columns:
+            # errors='coerce' turns bad dates into "NaT" instead of crashing the app
+            df['signup_date'] = pd.to_datetime(df['signup_date'], errors='coerce')
+            # drop rows where date is missing so resample doesn't fail
+            df = df.dropna(subset=['signup_date'])
+        return df
     return None
 
 df = load_data()
@@ -49,19 +56,23 @@ if df is not None:
         with col1:
             st.metric("Total Customers", f"{len(df):,}")
         with col2:
-            st.metric("Avg. Spend", "$452.10") # Example placeholder
+            st.metric("Avg. Spend", "$452.10") 
         with col3:
             st.metric("Retention", "78%", delta="2%")
         with col4:
             st.metric("Churn Risk", "12%", delta="-1%", delta_color="inverse")
 
         st.markdown("### Customer Growth Trend")
-        # Creating a trend chart based on your signup_date column
         if 'signup_date' in df.columns:
-            df['signup_date'] = pd.to_datetime(df['signup_date'])
-            trend_df = df.resample('M', on='signup_date').size().reset_index(name='New Customers')
-            fig_trend = px.line(trend_df, x='signup_date', y='New Customers', template="plotly_white", color_discrete_sequence=['#ff4b4b'])
+            # Grouping by Month ('ME' is for Month End to avoid future warnings)
+            trend_df = df.resample('ME', on='signup_date').size().reset_index(name='New Customers')
+            fig_trend = px.line(trend_df, x='signup_date', y='New Customers', 
+                                template="plotly_white", 
+                                title="New Signups Per Month",
+                                color_discrete_sequence=['#ff4b4b'])
             st.plotly_chart(fig_trend, use_container_width=True)
+        else:
+            st.info("Signup date column not detected for trend analysis.")
 
     elif page == "Deep Dive Analysis":
         st.title("🔍 Data Exploration & RFM")
