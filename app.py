@@ -3,7 +3,7 @@ import pandas as pd
 import os
 import plotly.express as px
 
-# 1. Page Configuration (Must be the first Streamlit command)
+# 1. Page Configuration
 st.set_page_config(page_title="Customer Analytics", page_icon="👥", layout="wide")
 
 st.title("📊 Customer Segmentation & Retention")
@@ -13,45 +13,50 @@ st.markdown("---")
 st.sidebar.title("Dashboard Menu")
 options = st.sidebar.radio("Select a View", ["Project Overview", "Data Preview", "RFM Analysis"])
 
-# Path to your data - Updated to match your exact filename in GitHub
-data_path = "data/raw/online_retail_II.csv"
+# Path to your data - Matches your GitHub folder: data/raw/customer_data.csv
+data_path = "data/raw/customer_data.csv"
 
 # 3. Logic to show different sections
 if options == "Project Overview":
     st.header("Welcome!")
-    st.write("This dashboard analyzes customer behavior using the Online Retail dataset.")
-    st.write("We use **RFM (Recency, Frequency, Monetary)** modeling to group customers into segments.")
-    st.info("The logic below is powered by the data in your GitHub repository.")
+    st.write("This dashboard analyzes customer behavior and segments.")
+    st.write("By using the data stored in your GitHub repository, we can visualize customer trends and retention.")
+    st.info("Currently viewing the Project Overview. Use the sidebar to explore data.")
 
 elif options == "Data Preview":
     st.header("Raw Data Sample")
     
     if os.path.exists(data_path):
-        # Loading a sample for speed
-        df = pd.read_csv(data_path, nrows=500)
-        st.write(f"Showing first 500 rows of `{data_path}`")
-        st.dataframe(df)
+        # Loading the data
+        df = pd.read_csv(data_path)
+        st.success(f"Loaded: {data_path}")
+        st.write("### First 50 Rows")
+        st.dataframe(df.head(50))
+        
+        # Show data statistics
+        if st.checkbox("Show Summary Statistics"):
+            st.write(df.describe())
     else:
-        st.error(f"File not found! I looked for: `{data_path}`. Please check if the filename is correct in your data/raw folder.")
+        st.error(f"File not found! I am looking for: `{data_path}`. Please verify the folder structure in GitHub.")
 
 elif options == "RFM Analysis":
     st.header("RFM Metrics Visualization")
     
     if os.path.exists(data_path):
-        df = pd.read_csv(data_path, nrows=1000)
+        df = pd.read_csv(data_path)
         
-        # Creating a simple chart
-        # Note: Your CSV uses 'Price' instead of 'UnitPrice' based on standard UCI datasets
-        price_col = 'Price' if 'Price' in df.columns else 'UnitPrice'
+        # Automatically detect columns for the chart
+        cols = df.columns.tolist()
+        st.write(f"Detected columns: {', '.join(cols)}")
         
-        if price_col in df.columns and 'Quantity' in df.columns:
-            df['TotalSales'] = df[price_col] * df['Quantity']
-            fig = px.scatter(df, x="Quantity", y=price_col, 
-                             size="TotalSales", color="Country" if "Country" in df.columns else None,
-                             title="Sales Distribution")
-            st.plotly_chart(fig, use_container_width=True)
-            st.success("Analysis loaded successfully!")
-        else:
-            st.warning(f"Expected columns not found. Found: {list(df.columns)}")
+        st.markdown("### Interactive Distribution")
+        x_axis = st.selectbox("Select X-axis for chart:", cols, index=0)
+        y_axis = st.selectbox("Select Y-axis for chart:", cols, index=min(1, len(cols)-1))
+        
+        fig = px.scatter(df, x=x_axis, y=y_axis, 
+                         color_discrete_sequence=['#ff4b4b'],
+                         title=f"{x_axis} vs {y_axis}")
+        
+        st.plotly_chart(fig, use_container_width=True)
     else:
-        st.error("Data file missing.")
+        st.error("Data file missing. Cannot generate analysis.")
