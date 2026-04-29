@@ -21,7 +21,7 @@ if options == "Project Overview":
 elif options == "Data Preview":
     st.header("Raw Data Sample")
     # This looks for the data in your data/raw folder
-    data_path = "data/raw/your_data_file.csv" # <--- UPDATE THIS with your actual filename!
+    data_path = "data/raw/customer_data.csv" # <--- UPDATE THIS with your actual filename!
     
     if os.path.exists(data_path):
         df = pd.read_csv(data_path)
